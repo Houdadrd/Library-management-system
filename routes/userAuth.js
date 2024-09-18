@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const Users = require("../Models/userModel");
 const Role = require("../Models/roleModel");
+const mongoose = require("mongoose");
 
 // Middleware to authenticate token
 const authenticateToken = (req, res, next) => {
@@ -30,15 +31,32 @@ const authenticateToken = (req, res, next) => {
 
 const verifyAdmin = async (req, res, next) => {
   authenticateToken(req, res, async () => {
-    const { authClaims } = req.user;
-    const role = await Role.findById(authClaims[1].role[0]);
-    const isAdmin = authClaims.some((claim) => role.name === "admin");
+    try {
+      const { authClaims } = req.user;
+      const roleName = authClaims[1]?.role; 
 
-    if (isAdmin) {
-      next(); 
-    } else {
-      res.status(403).json({ message: "You are not authorized!" }); 
+      if (!roleName) {
+        return res.status(403).json({ message: "Role not found" });
+      }
+
+      // console.log("Role name:", roleName);
+
+      if (roleName === "admin") {
+        next(); 
+      } else {
+        res.status(403).json({ message: "You are not authorized!" });
+      }
+    } catch (err) {
+      console.error("Error details:", err);
+      res
+        .status(500)
+        .json({
+          message: "Server error",
+          details: err.message,
+        });
     }
   });
 };
+
+
 module.exports = { authenticateToken, verifyAdmin };

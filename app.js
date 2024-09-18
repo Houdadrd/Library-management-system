@@ -1,5 +1,7 @@
 const express = require("express");
 const mongosse = require ("mongoose");
+const path = require("path");
+
 const app = express();
 require("dotenv").config();
 
@@ -17,7 +19,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({extended: false}));
 
-app.use("/uploads", express.static("uploads"));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api",routerBook);
 app.use("/api", routerRoles);
 app.use("/api", routerUsers);

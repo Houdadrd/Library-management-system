@@ -7,7 +7,7 @@ routerUser.post("/Signin", usersControllers.Signin);
 routerUser.post("/Signup", usersControllers.Signup);
 routerUser.get("/getUserInfo", authenticateToken, usersControllers.getUserInfo);
 
-routerUser.post("/CreateUser", verifyAdmin,authenticateToken, usersControllers.CreateUser);
+routerUser.post("/CreateUser", usersControllers.CreateUser);
 routerUser.post(
   "/CreateDeliveryMan",verifyAdmin,authenticateToken,usersControllers.CreateUser
 );

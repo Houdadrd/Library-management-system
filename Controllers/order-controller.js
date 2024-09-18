@@ -95,7 +95,7 @@ exports.RemoveFromCart = async (req, res) => {
 exports.getUserCart = async (req, res) => {
   try {
     const { id } = req.headers;
-    // Find the active order for the user
+
     const orders = await Orders.findOne({
       users: id,
       status: "Order placed",
@@ -142,6 +142,7 @@ exports.updateQuantity = async (req, res) => {
   }
 };
 
+//place order
 exports.PlaceOrder = async (req, res) => {
   try {
     const userid = req.headers.id;
@@ -212,15 +213,10 @@ exports.PlaceOrder = async (req, res) => {
   }
 };
 
-
-
-
-
 // Get confirmed order history - order/history page
 exports.getOrderHistory = async (req, res) => {
   try {
-    const { id } = req.headers;
-   
+    const { id } = req.headers;   
     const orders = await Orders.find({ users: id, confirmed: true }).populate({path: 'books.bookId',  select: 'title  price', }).exec();
 
     if (orders.length === 0) {
@@ -238,11 +234,18 @@ exports.getOrderHistory = async (req, res) => {
           if (bookItem.bookId) {
             return {
               bookId: bookItem.bookId._id,
-              title: bookItem.bookId.title,
-              price: bookItem.bookId.price,
-              quantity: bookItem.quantity,
+              title: bookItem.bookId.title ,
+              price: bookItem.bookId.price || 0,
+              quantity: bookItem.quantity || 0,
             };
-          }           
+          } else {
+            return {
+              bookId: null,
+              title: "No Title Available",
+              price:  0,
+              quantity: bookItem.quantity || 0,
+            };
+          }
         }),
       };
     });
@@ -258,13 +261,30 @@ exports.getOrderHistory = async (req, res) => {
 //get all orders --admin
 exports.getAllOrders = async (req, res) => {
   try {
-    const { id } = req.headers;
 
-    const orderData = await Orders.find({ users: id, confirmed: true })
+    const orderData = await Orders.find({})
       .populate("users", "firstName lastName userName")
+      .populate({
+        path: "books.bookId",
+        select: "title",
+      })
       .sort({ createdAt: -1 });
 
-    return res.json({ data: orderData });
+    const formattedOrders = orderData.map((order) => {
+        return {
+      ...order._doc,
+        books: order.books.map((bookEntry) => {
+           return {
+            title: bookEntry.bookId ? bookEntry.bookId.title : 'Unknown Title',
+            quantity: bookEntry.quantity,
+          };
+        // title: bookEntry.bookId.title,
+        // quantity: bookEntry.quantity,
+      }),
+    };
+  });
+
+ return res.json({ data: formattedOrders });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -281,21 +301,11 @@ exports.updateStatusOrder = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
     const validStatuses = [
-      "Order placed",
       "Out of delivery",
       "Delivered",
-      "Canceled",
     ];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ message: "Invalid status value" });
-    }
-
-    //check if admin
-    const user = await Users.findById(userId);
-    if (user.roles !== "admin") {
-      return res
-        .status(403)
-        .json({ message: "You have not access to perform admin work" });
     }
 
     const updatedOrder = await Orders.findByIdAndUpdate(

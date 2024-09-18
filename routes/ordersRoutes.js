@@ -16,14 +16,13 @@ routerOrder.put(
 );
 
 routerOrder.put("/RemoveFromCart/:bookid",authenticateToken,ordersControllers.RemoveFromCart );
-
-
 routerOrder.post("/PlaceOrders", authenticateToken, ordersControllers.PlaceOrder);
-
 routerOrder.get("/getOrderHistory", authenticateToken, ordersControllers.getOrderHistory);
 
+
+
 //for admin
-routerOrder.get("/getAllOrders", authenticateToken, verifyAdmin, ordersControllers.getAllOrders);
+routerOrder.get("/getAllOrders", authenticateToken, ordersControllers.getAllOrders);
 routerOrder.put("/updateStatus/:id", authenticateToken, verifyAdmin, ordersControllers.updateStatusOrder);
 
 // routerOrder.get("/Orders", ordersControllers.getOrders);

@@ -2,30 +2,104 @@ const mongoose = require("mongoose");
 const Books = require("../Models/BookModel");
 const Users = require("../Models/userModel");
 
-//add bok --admin
+//add book --admin
 exports.Createbook = async (req, res) => {
-  try {
-    const newBook = new Books({title :req.body.title,
-       author: req.body.author, 
-       price: req.body.price,
-       desc: req.body.desc, 
-       category: req.body.category, 
-       language: req.body.language,
-       image: req.file.filename, 
-       stock: req.body.stock} );
-    const books = await Books.find(newBook);
-    
-      const book = await newBook.save();
-      return res
-        .status(201)
-        .json({ book: book, message: "Book addes successfully" });
-    
-  } catch (error) {
-    console.log(JSON.stringify(error));
-    return res.status(400).json({ error: "Something went wrong" });
+  const { title, author, price, desc, category, language, stock } = req.body;
+  const image = req.file.filename 
 
+  // console.log("Request body:", req.body );
+  try {
+    //  console.log("Uploaded file:", req.file);
+
+    // if (!title || typeof title !== "string" || title.trim().length === 0) {
+    //   return res.status(400).json({
+    //     message: "Title is required and should be a non-empty string",
+    //     field: "title",
+    //   });
+    // }
+
+    // if (!author || typeof author !== "string" || author.trim().length < 3) {
+    //   return res.status(400).json({
+    //     message: "Author is required and should be at least 3 characters long",
+    //     field: "author",
+    //   });
+    // }
+
+    // if (!price || isNaN(price) || parseFloat(price) <= 0) {
+    //   return res.status(400).json({
+    //     message: "Price is required and should be a positive number",
+    //     field: "price",
+    //   });
+    // }
+
+
+    // const validCategories = [
+    //   "Crime",
+    //   "Romantic",
+    //   "Dramatic",
+    //   "Adventure",
+    //   "Horror",
+    //   "Philosophical",
+    //   "Science fiction",
+    //   "Historical",
+    //   "Political",
+    // ];
+    // if (!category || !validCategories.includes(category)) {
+    //   return res.status(400).json({
+    //     message:
+    //       "Category is required and should be one of the predefined categories",
+    //     field: "category",
+    //   });
+    // }
+
+    // if (
+    //   !language ||
+    //   typeof language !== "string" ||
+    //   language.trim().length === 0
+    // ) {
+    //   return res.status(400).json({
+    //     message: "Language is required and should be a non-empty string",
+    //     field: "language",
+    //   });
+    // }
+
+    // if (
+    //   !stock ||
+    //   isNaN(stock) ||
+    //   parseInt(stock, 10) < 0 ||
+    //   !Number.isInteger(parseFloat(stock))
+    // ) {
+    //   return res.status(400).json({
+    //     message: "Stock is required and should be a non-negative integer",
+    //     field: "stock",
+    //   });
+    // }
+
+    // Create book
+    const newBook = new Books({
+      title,
+      author,
+      price: parseFloat(price),
+      desc,
+      category,
+      language,
+      image,
+      stock: parseInt(stock, 10),
+    });
+    
+
+    const book = await newBook.save();    
+
+    return res.status(201).json({ book, message: "Book added successfully" });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ error: "Something went wrong", details: error.message });
   }
 };
+
+
+
 
 //searching by title, author, or category
 exports.getBookByCriteria = async (req, res) => {
@@ -88,7 +162,7 @@ exports.getBookId= async(req,res)=>{
     }
 };
 
-//get recently added books limit 5
+//get recently added books limit 4
 exports.getRecentBook = async (req, res) => {
   try {
     const bookFind = await Books.find().sort({ createdAt: -1 }).limit(4);
@@ -117,24 +191,45 @@ exports.getBooks = async (req, res) => {
 };
 
 //update book --admin
-exports.editBook = async (req,res)=>{
-    try{
-        const { id } = req.headers;
-        const book = await Books.findByIdAndUpdate(id, req.body,{ new: true });
-        if (!book){
-            return res.status(404).json({message: 'Cannot find this book'})
-        }
-         return res.status(200).json({ message: "Book updated successfully!" });
-    }catch (error){
-        console.log(JSON.stringify(error));
-        return res.status(500).json({ message: error.message });
+exports.editBook = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const book = await Books.findById(id);
+
+    if (!book) {
+      return res.status(404).json({ message: "Book not found" });
     }
+
+    const updateData = {
+      title: req.body.title || book.title,
+      author: req.body.author || book.author,
+      price: req.body.price || book.price,
+      desc: req.body.desc || book.desc,
+      category: req.body.category || book.category,
+      language: req.body.language || book.language,
+      stock: req.body.stock || book.stock,
+    };
+
+    if (req.file) {
+      updateData.image = req.file.filename;
+    }
+
+    const updatedBook = await Books.findByIdAndUpdate(id, updateData, {
+      new: true,
+    });
+
+    return res.status(200).json({ message: "Book updated successfully!", book: updatedBook });
+  } catch (error) {
+    console.log(JSON.stringify(error));
+    return res.status(500).json({ message: error.message });
+  }
 };
 
 //delete book --admin
 exports.deleteBook = async (req, res) =>{
     try{
-         const { id } = req.headers;
+         const { id } = req.params;
          const book = await Books.findByIdAndDelete(id);
          if (!book) {
            return res
